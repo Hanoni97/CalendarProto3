@@ -46,21 +46,22 @@
                 android:orientation="vertical"
                 tools:ignore="UselessParent">
 
-                <LinearLayout
+                <GridLayout
                     android:id="@+id/calendarButtonsLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
+                    android:rowCount="2"
+                    android:columnCount="3"
                     android:padding="16dp">
-                </LinearLayout>
+                </GridLayout>
 
                 <Button
                     android:id="@+id/addButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_margin="16dp"
-                    android:background="@drawable/rounded_box"
-                    android:text="@string/add_calendar"
+                    android:background="@drawable/rounded_box_2"
+                    android:text="@string/plus"
                     android:textColor="@color/purple_500"
                     android:textSize="16sp"
                     android:textStyle="bold" />

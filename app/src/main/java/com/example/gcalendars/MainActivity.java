@@ -3,10 +3,15 @@ package com.example.gcalendars;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.GridLayout;
+import android.widget.GridView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -26,7 +31,7 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     private FirebaseUser user;
-    private LinearLayout calendarButtonsLayout;
+    private GridLayout calendarButtonsLayout;
     private DatabaseReference databaseReference; // 추가: 데이터베이스 레퍼런스
 
     @Override
@@ -104,7 +109,7 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 // 캘린더 정보를 로드한 후 버튼을 생성
-                createCalendarButtons(userCalendars);
+                createCalendarLayouts(userCalendars);
             }
 
             @Override
@@ -115,23 +120,63 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private void createCalendarButtons(List<UserCalendar> userCalendars) {
+    private void createCalendarLayouts(List<UserCalendar> userCalendars) {
         // 기존 버튼을 모두 제거
         calendarButtonsLayout.removeAllViews();
 
-        for (UserCalendar calendarInfo : userCalendars) {
-            Button calendarButton = new Button(this);
-            calendarButton.setText(calendarInfo.getCalendarName());
+        GridLayout gridLayout = new GridLayout(this);
+        gridLayout.setRowCount(2);
+        gridLayout.setColumnCount(3);
+        GridLayout.Spec rowSpec;
+        GridLayout.Spec colSpec;
+        GridLayout.LayoutParams params;
 
-            calendarButton.setOnClickListener(view -> {
+        for (int i = 0; i < userCalendars.size(); i++) {
+            UserCalendar calendarInfo = userCalendars.get(i);
+
+            LinearLayout calendarLayout = new LinearLayout(this);
+            TextView calendarTextView = new TextView(this);
+            calendarTextView.setText(calendarInfo.getCalendarName());
+
+            // Drawable 파일 이름을 적절히 변경해야 함
+            calendarTextView.setBackgroundResource(R.drawable.rounded_box);
+
+            ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, // 여기서 원하는 너비 설정
+                    ViewGroup.LayoutParams.MATCH_PARENT  // 여기서 원하는 높이 설정
+            );
+            calendarLayout.setLayoutParams(layoutParams);
+
+            // 행과 열을 설정
+            rowSpec = GridLayout.spec(i / 3);  // 행
+            colSpec = GridLayout.spec(i % 3);  // 열
+
+            params = new GridLayout.LayoutParams(rowSpec, colSpec);
+
+            // 외부 간격(margin) 설정
+            int marginInPixels = 16; // 원하는 간격 크기 (픽셀)
+            params.setMargins(marginInPixels, marginInPixels, marginInPixels, marginInPixels);
+
+            // gravity를 사용하여 화면에 반반 나눠지도록 설정
+            params.setGravity(Gravity.FILL_VERTICAL | Gravity.FILL_HORIZONTAL);
+
+            // calendarButton가 아니라 calendarLayout을 사용하도록 수정
+            calendarLayout.setLayoutParams(params);
+            calendarLayout.setBackgroundResource(R.drawable.rounded_box_color);
+
+            calendarLayout.setOnClickListener(view -> {
                 // 캘린더 버튼 클릭 시 커스텀 캘린더 클래스로 이동하고
                 // 캘린더 아이디와 컬렉션명을 전달
                 openCustomCalendar(calendarInfo.getCalendarId(), calendarInfo.getCalendarName());
             });
 
-            calendarButtonsLayout.addView(calendarButton);
+            // calendarButton 대신 calendarLayout을 추가
+            calendarLayout.addView(calendarTextView);
+            calendarButtonsLayout.addView(calendarLayout);
         }
     }
+
+
 
     private void openCustomCalendar(String calendarId, String calendarName) {
         // 커스텀 캘린더 클래스로 이동하고 정보 전달
