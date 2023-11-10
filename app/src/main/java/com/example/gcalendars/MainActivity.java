@@ -9,16 +9,17 @@ import android.view.MenuItem;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.GridLayout;
-import android.widget.GridView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.gcalendars.LogIn.UserCalendar;
 import com.example.gcalendars.custom.CustomCalendar;
+
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -56,10 +57,7 @@ public class MainActivity extends AppCompatActivity {
             // 다이얼로그 띄우기
             showAddCalendarDialog();
         });
-        // 그룹 생성 버튼의 클릭 이벤트 처리
-        Button btnCreateGroup = findViewById(R.id.btnCreateGroup);
-        btnCreateGroup.setOnClickListener(v -> startActivity(new Intent(this, CreateGroupCalendarActivity.class)));
-    }
+     }
 
     private void showAddCalendarDialog() {
         AddCalendarDialog addCalendarDialog = new AddCalendarDialog(this);
@@ -125,8 +123,8 @@ public class MainActivity extends AppCompatActivity {
         calendarButtonsLayout.removeAllViews();
 
         GridLayout gridLayout = new GridLayout(this);
-        gridLayout.setRowCount(2);
-        gridLayout.setColumnCount(3);
+        gridLayout.setRowCount(10);
+        gridLayout.setColumnCount(2);
         GridLayout.Spec rowSpec;
         GridLayout.Spec colSpec;
         GridLayout.LayoutParams params;
@@ -148,8 +146,8 @@ public class MainActivity extends AppCompatActivity {
             calendarLayout.setLayoutParams(layoutParams);
 
             // 행과 열을 설정
-            rowSpec = GridLayout.spec(i / 3);  // 행
-            colSpec = GridLayout.spec(i % 3);  // 열
+            rowSpec = GridLayout.spec(i / 2);  // 행
+            colSpec = GridLayout.spec(i % 2);  // 열
 
             params = new GridLayout.LayoutParams(rowSpec, colSpec);
 
@@ -164,6 +162,12 @@ public class MainActivity extends AppCompatActivity {
             calendarLayout.setLayoutParams(params);
             calendarLayout.setBackgroundResource(R.drawable.rounded_box_color);
 
+            // 캘린더 삭제 기능 추가
+            calendarLayout.setOnLongClickListener(view -> {
+                showDeleteDialog(calendarInfo.getCalendarId(), calendarInfo.getCalendarName());
+                return true;
+            });
+
             calendarLayout.setOnClickListener(view -> {
                 // 캘린더 버튼 클릭 시 커스텀 캘린더 클래스로 이동하고
                 // 캘린더 아이디와 컬렉션명을 전달
@@ -176,6 +180,60 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void showDeleteDialog(String calendarId, String calendarName) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("캘린더 삭제");
+        builder.setMessage(calendarName + " 캘린더를 삭제하시겠습니까?");
+
+        builder.setPositiveButton("삭제", (dialog, which) -> {
+            // 캘린더 삭제 함수 호출
+            String userID = user.getUid();
+            deleteCalendar(calendarId,userID);
+        });
+
+        builder.setNegativeButton("취소", (dialog, which) -> {
+            // 사용자가 취소한 경우 아무 작업도 수행하지 않음
+        });
+
+        // 다이얼로그 표시
+        AlertDialog alertDialog = builder.create();
+        alertDialog.setOnShowListener(dialogInterface -> {
+            // 다이얼로그 표시 후 버튼 색상 변경
+            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getResources().getColor(R.color.blue));
+            alertDialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(getResources().getColor(R.color.blue));
+        });
+        // 다이얼로그 표시
+        alertDialog.show();
+      }
+
+    private void deleteCalendar(String calendarId, String userID) {
+        DatabaseReference calendarsRef = databaseReference.child("users").child(userID).child("calendars").child(calendarId);
+        DatabaseReference groupCalendarsRef = databaseReference.child("users").child(userID).child("group-calendar").child(calendarId);
+
+        // calendars 경로에서 삭제
+        calendarsRef.removeValue()
+                .addOnSuccessListener(aVoid -> {
+                    // 캘린더 삭제 성공
+                    Toast.makeText(MainActivity.this, "캘린더가 삭제되었습니다.", Toast.LENGTH_SHORT).show();
+                    // 필요하다면 UI 업데이트 등 추가 작업 수행
+                })
+                .addOnFailureListener(e -> {
+                    // 캘린더 삭제 실패
+                    Toast.makeText(MainActivity.this, "캘린더 삭제 중 오류가 발생했습니다.", Toast.LENGTH_SHORT).show();
+                });
+
+        // group-calendar 경로에서 삭제
+        groupCalendarsRef.removeValue()
+                .addOnSuccessListener(aVoid -> {
+                    // 캘린더 삭제 성공
+                    Toast.makeText(MainActivity.this, "캘린더가 삭제되었습니다.", Toast.LENGTH_SHORT).show();
+                    // 필요하다면 UI 업데이트 등 추가 작업 수행
+                })
+                .addOnFailureListener(e -> {
+                    // 캘린더 삭제 실패
+                    Toast.makeText(MainActivity.this, "캘린더 삭제 중 오류가 발생했습니다.", Toast.LENGTH_SHORT).show();
+                });
+    }
 
 
     private void openCustomCalendar(String calendarId, String calendarName) {

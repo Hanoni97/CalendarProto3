@@ -32,7 +32,6 @@
         <activity android:name=".custom.CalendarAdapter" />
         <activity android:name=".custom.CalendarViewHolder" />
         <activity android:name=".personalSettings" />
-        <activity android:name=".CreateGroupCalendarActivity"/>
         <activity android:name=".FriendsActivity"/>
     </application>
 </manifest>
