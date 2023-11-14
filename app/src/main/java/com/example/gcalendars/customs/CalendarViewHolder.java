@@ -1,4 +1,4 @@
-package com.example.gcalendars.custom;
+package com.example.gcalendars.customs;
 import android.view.View;
 import android.widget.TextView;
 

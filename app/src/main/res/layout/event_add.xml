@@ -6,7 +6,7 @@
     android:gravity="center"
     android:orientation="vertical"
     android:padding="16dp"
-    tools:context=".custom.AddEvent">
+    tools:context=".customs.AddEvent">
 
 
     <LinearLayout

@@ -1,12 +1,14 @@
 package com.example.gcalendars;
 
 
+import static android.content.ContentValues.TAG;
+
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.GridLayout;
 import android.widget.LinearLayout;
@@ -16,9 +18,10 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import com.example.gcalendars.LogIn.UserCalendar;
-import com.example.gcalendars.custom.CustomCalendar;
+import com.example.gcalendars.customs.CustomCalendar;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -27,6 +30,11 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,12 +60,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         Button buttonAddCalendar = findViewById(R.id.addButton);
-
-        buttonAddCalendar.setOnClickListener(v -> {
-            // 다이얼로그 띄우기
-            showAddCalendarDialog();
-        });
-     }
+        buttonAddCalendar.setOnClickListener(v -> showAddCalendarDialog());
+    }
 
     private void showAddCalendarDialog() {
         AddCalendarDialog addCalendarDialog = new AddCalendarDialog(this);
@@ -85,6 +89,7 @@ public class MainActivity extends AppCompatActivity {
 
         return super.onOptionsItemSelected(item);
     }
+
     private void loadUserCalendars() {
         String userUid = user.getUid();
         DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference("users").child(userUid);
@@ -117,94 +122,144 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-
     private void createCalendarLayouts(List<UserCalendar> userCalendars) {
-        // 기존 버튼을 모두 제거
         calendarButtonsLayout.removeAllViews();
-
-        GridLayout gridLayout = new GridLayout(this);
-        gridLayout.setRowCount(10);
-        gridLayout.setColumnCount(2);
-        GridLayout.Spec rowSpec;
-        GridLayout.Spec colSpec;
-        GridLayout.LayoutParams params;
 
         for (int i = 0; i < userCalendars.size(); i++) {
             UserCalendar calendarInfo = userCalendars.get(i);
+            LinearLayout calendarLayout = createCalendarLayout(calendarInfo);
 
-            LinearLayout calendarLayout = new LinearLayout(this);
-            TextView calendarTextView = new TextView(this);
-            calendarTextView.setText(calendarInfo.getCalendarName());
-
-            // Drawable 파일 이름을 적절히 변경해야 함
-            calendarTextView.setBackgroundResource(R.drawable.rounded_box);
-
-            ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT, // 여기서 원하는 너비 설정
-                    ViewGroup.LayoutParams.MATCH_PARENT  // 여기서 원하는 높이 설정
-            );
-            calendarLayout.setLayoutParams(layoutParams);
-
-            // 행과 열을 설정
-            rowSpec = GridLayout.spec(i / 2);  // 행
-            colSpec = GridLayout.spec(i % 2);  // 열
-
-            params = new GridLayout.LayoutParams(rowSpec, colSpec);
-
-            // 외부 간격(margin) 설정
-            int marginInPixels = 16; // 원하는 간격 크기 (픽셀)
-            params.setMargins(marginInPixels, marginInPixels, marginInPixels, marginInPixels);
-
-            // gravity를 사용하여 화면에 반반 나눠지도록 설정
-            params.setGravity(Gravity.FILL_VERTICAL | Gravity.FILL_HORIZONTAL);
-
-            // calendarButton가 아니라 calendarLayout을 사용하도록 수정
-            calendarLayout.setLayoutParams(params);
-            calendarLayout.setBackgroundResource(R.drawable.rounded_box_color);
-
-            // 캘린더 삭제 기능 추가
             calendarLayout.setOnLongClickListener(view -> {
                 showDeleteDialog(calendarInfo.getCalendarId(), calendarInfo.getCalendarName());
-                return true;
+                return true; // Return true to indicate that the long click event was consumed
             });
 
-            calendarLayout.setOnClickListener(view -> {
-                // 캘린더 버튼 클릭 시 커스텀 캘린더 클래스로 이동하고
-                // 캘린더 아이디와 컬렉션명을 전달
-                openCustomCalendar(calendarInfo.getCalendarId(), calendarInfo.getCalendarName());
-            });
+            // 캘린더 클릭 시 이벤트 추가
+            calendarLayout.setOnClickListener(view ->
+                    openCustomCalendar(calendarInfo.getCalendarId(), calendarInfo.getCalendarName()));
 
-            // calendarButton 대신 calendarLayout을 추가
-            calendarLayout.addView(calendarTextView);
             calendarButtonsLayout.addView(calendarLayout);
         }
     }
+
+    private LinearLayout createCalendarLayout(UserCalendar calendarInfo) {
+        LinearLayout calendarLayout = new LinearLayout(this);
+        calendarLayout.setOrientation(LinearLayout.VERTICAL);
+
+        TextView calendarTextView = new TextView(this);
+        calendarTextView.setText(calendarInfo.getCalendarName());
+        calendarTextView.setGravity(Gravity.CENTER);
+        calendarTextView.setBackgroundResource(R.drawable.rounded_box);
+
+        List<String> nearestEvents = getNearestEvents(calendarInfo.getCalendarId());
+        for (String event : nearestEvents) {
+            TextView eventTextView = createEventTextView(event);
+            calendarLayout.addView(eventTextView);
+        }
+
+        setLayoutParamsAndBackground(calendarLayout);
+
+        return calendarLayout;
+    }
+
+    private TextView createEventTextView(String event) {
+        TextView eventTextView = new TextView(this);
+        eventTextView.setText(event);
+        eventTextView.setGravity(Gravity.CENTER);
+        return eventTextView;
+    }
+
+    private void setLayoutParamsAndBackground(LinearLayout calendarLayout) {
+        // 레이아웃 파라미터 설정
+        GridLayout.Spec rowSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f);
+        GridLayout.Spec colSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f);
+        GridLayout.LayoutParams params = new GridLayout.LayoutParams(rowSpec, colSpec);
+        int marginInPixels = 16;
+        params.setMargins(marginInPixels, marginInPixels, marginInPixels, marginInPixels);
+        params.setGravity(Gravity.FILL_VERTICAL | Gravity.FILL_HORIZONTAL);
+        calendarLayout.setLayoutParams(params);
+
+        // 배경 설정
+        calendarLayout.setBackgroundResource(R.drawable.rounded_box_color);
+    }
+
+    private List<String> getNearestEvents(String calendarId) {
+        List<String> events = new ArrayList<>();
+
+        // 현재 날짜를 구합니다.
+        LocalDate currentDate = LocalDate.now();
+
+        // Firestore에서 해당 캘린더의 일정을 가져오기
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        db.collection(calendarId)
+                .whereArrayContains("dates", currentDate.format(DateTimeFormatter.ofPattern("yyyy MM dd")))
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            // 각 문서의 dates 배열에서 현재 날짜를 포함하거나 앞으로 가까운 일정을 가져옴
+                            List<String> dates = (List<String>) document.get("dates");
+                            if (dates != null && !dates.isEmpty()) {
+                                int currentIndex = dates.indexOf(currentDate.format(DateTimeFormatter.ofPattern("yyyy MM dd")));
+                                if (currentIndex != -1) {
+                                    // 현재 날짜를 포함하는 경우
+                                    int endIndex = Math.min(currentIndex + 3, dates.size());
+                                    for (int i = currentIndex; i < endIndex; i++) {
+                                        events.add(document.getString("title"));
+                                    }
+                                } else {
+                                    // 현재 날짜를 포함하지 않는 경우
+                                    int endIndex = Math.min(3, dates.size());
+                                    for (int i = 0; i < endIndex; i++) {
+                                        events.add(document.getString("title"));
+                                    }
+                                }
+                            }
+                        }
+                        // UI에 표시하기 위해 호출
+                        updateUIWithEvents(events);
+
+                    } else {
+                        Log.e(TAG, "Error getting documents: " + task.getException(), task.getException());
+                    }
+                });
+
+        return events;
+    }
+
+    private void updateUIWithEvents(List<String> events) {
+        calendarButtonsLayout.removeAllViews();
+
+        for (String event : events) {
+            TextView eventTextView = createEventTextView(event);
+            calendarButtonsLayout.addView(eventTextView);
+        }
+    }
+
 
     private void showDeleteDialog(String calendarId, String calendarName) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("캘린더 삭제");
         builder.setMessage(calendarName + " 캘린더를 삭제하시겠습니까?");
 
-        builder.setPositiveButton("삭제", (dialog, which) -> {
-            // 캘린더 삭제 함수 호출
-            String userID = user.getUid();
-            deleteCalendar(calendarId,userID);
-        });
+        builder.setPositiveButton("삭제", (dialog, which) ->
+                deleteCalendar(calendarId, user.getUid()));
 
         builder.setNegativeButton("취소", (dialog, which) -> {
             // 사용자가 취소한 경우 아무 작업도 수행하지 않음
         });
 
-        // 다이얼로그 표시
         AlertDialog alertDialog = builder.create();
-        alertDialog.setOnShowListener(dialogInterface -> {
-            // 다이얼로그 표시 후 버튼 색상 변경
-            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getResources().getColor(R.color.blue));
-            alertDialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(getResources().getColor(R.color.blue));
-        });
-        // 다이얼로그 표시
+        setDialogButtonColors(alertDialog);
         alertDialog.show();
-      }
+    }
+
+    private void setDialogButtonColors(AlertDialog alertDialog) {
+        alertDialog.setOnShowListener(dialogInterface -> {
+            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(ContextCompat.getColor(this, R.color.blue));
+            alertDialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(ContextCompat.getColor(this, R.color.blue));
+        });
+    }
 
     private void deleteCalendar(String calendarId, String userID) {
         DatabaseReference calendarsRef = databaseReference.child("users").child(userID).child("calendars").child(calendarId);

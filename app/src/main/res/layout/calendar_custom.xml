@@ -163,7 +163,7 @@
             android:id="@+id/buttonAdd"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginRight="10dp"
+            android:layout_marginEnd="10dp"
             android:text="@string/addEvent"
             tools:ignore="ButtonStyle" />
 
@@ -171,7 +171,7 @@
             android:id="@+id/deleteBtn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginRight="10dp"
+            android:layout_marginEnd="10dp"
             android:text="@string/deleteEvent"
             android:textColor="#757575"
             tools:ignore="ButtonStyle" />
@@ -180,7 +180,7 @@
             android:id="@+id/editButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginRight="10dp"
+            android:layout_marginEnd="10dp"
             android:text="@string/edit"
             tools:ignore="ButtonStyle" />
 
