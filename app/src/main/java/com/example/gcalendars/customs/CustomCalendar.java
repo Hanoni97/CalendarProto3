@@ -1,4 +1,4 @@
-package com.example.gcalendars.custom;
+package com.example.gcalendars.customs;
 
 import static android.content.ContentValues.TAG;
 

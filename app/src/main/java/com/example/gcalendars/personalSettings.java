@@ -9,7 +9,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.gcalendars.LogIn.LoginActivity;
-import com.example.gcalendars.custom.CustomCalendar;
+import com.example.gcalendars.customs.CustomCalendar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.UserProfileChangeRequest;

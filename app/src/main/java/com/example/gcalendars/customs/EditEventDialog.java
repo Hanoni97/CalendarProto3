@@ -1,4 +1,4 @@
-package com.example.gcalendars.custom;
+package com.example.gcalendars.customs;
 
 import android.annotation.SuppressLint;
 import android.app.DatePickerDialog;

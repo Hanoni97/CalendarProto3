@@ -25,12 +25,12 @@
         <activity android:name=".LogIn.RegisterActivity" />
 
         <activity android:name=".MainActivity" />
-        <activity android:name=".custom.CustomCalendar" />
+        <activity android:name=".customs.CustomCalendar" />
         <activity
-            android:name=".custom.AddEvent"
+            android:name=".customs.AddEvent"
             android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".custom.CalendarAdapter" />
-        <activity android:name=".custom.CalendarViewHolder" />
+        <activity android:name=".customs.CalendarAdapter" />
+        <activity android:name=".customs.CalendarViewHolder" />
         <activity android:name=".personalSettings" />
         <activity android:name=".FriendsActivity"/>
     </application>
